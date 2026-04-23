@@ -1,0 +1,25 @@
+on: 
+  push:
+    branches: main
+name: ssh copy into server
+
+jobs:
+  upload:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        
+      - name: Create SSH keys
+        run: |
+          install -m 600 -D /dev/null ~/.ssh/id_rsa
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          host="${{ secrets.HOST }}"
+          hosts="$(dig +short "$host" | grep -v '\.$' | sed -z 's|\n|,|g')$host"
+          ssh-keyscan -H "$hosts" > ~/.ssh/known_hosts
+        shell: bash
+        
+      - name: Copy website into VPS
+        run: ssh -i ~/.ssh/id_rsa -r cd curl-padjokej.dev && git pull
+        shell: bash
+        
