@@ -20,6 +20,6 @@ jobs:
         shell: bash
         
       - name: Copy website into VPS
-        run: ssh -i ~/.ssh/id_rsa cd curl-padjokej.dev && git pull
+        run: ssh -i ~/.ssh/id_rsa "arch@${{ secrets.HOST }}" cd curl-padjokej.dev && git pull
         shell: bash
         
