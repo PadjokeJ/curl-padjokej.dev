@@ -1,0 +1,4 @@
+
+    => {blue}Github{reset}   : {cyan}https://github.com/PadjokeJ/{reset}
+    => {blue}Itch{reset}     : {cyan}https://padjokej.itch.io/{reset}
+    => {blue}BlueSky{reset}  : {cyan}https://bsky.app/profile/padjokej.dev{reset}
