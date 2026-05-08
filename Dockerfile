@@ -22,7 +22,9 @@ RUN chmod 777 /app
 
 COPY --from=build /build/main ./
 
-COPY --from=build /build/Rocket.tom[l] ./static
+RUN mkdir /app/static/
+
+COPY --from=build /build/Rocket.toml ./static/
 COPY --from=build /build/socials.txt ./
 
 ENV ROCKET_ADDRESS=0.0.0.0
