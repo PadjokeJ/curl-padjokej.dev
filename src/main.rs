@@ -2,6 +2,9 @@ use std::fs::File;
 use std::io::prelude::*;
 use std::str::Split;
 
+use reqwest::{self, Response};
+use serde::{Deserialize, Serialize};
+
 #[macro_use] extern crate rocket;
 
 const RST: &str = "\x1B[0m";
@@ -15,6 +18,21 @@ const WEBSITE_HEADER: &str = "\
 \t.----------------.
 \t|    PadjokeJ    |
 \t'----------------'";
+
+#[derive(Deserialize, Serialize)]
+struct Projects {
+    Projects: Vec<Project>
+}
+
+#[derive(Deserialize, Serialize)]
+struct Project {
+    Id: String,
+    Title: String,
+    Description: String,
+    Image: String,
+    URL: String,
+    Tech: String,
+}
 
 fn shorten(s: &str, len: usize) -> String {
     let mut short: String = String::new();
@@ -64,6 +82,68 @@ fn routes() -> String {
     s
 }
 
+#[get("/projects")]
+async fn projects() -> String {
+    let res = reqwest::get("https://padjokej.dev/projects.json").await;
+    
+    return match res {
+        Ok(res) => {
+            let v: Projects = serde_json::from_str(res.text().await.unwrap().as_str()).unwrap();
+            
+            let mut s: String = String::from("/projects:\n\n");
+            
+            let mut lines: Vec<String> = Vec::new();
+            let mut titles: Vec<String> = Vec::new();
+
+            let mut mt = 0;
+            let len = v.Projects.len();
+
+            for p in &v.Projects {
+                let mut l = String::new();
+
+                l.push_str(" => ");
+                l.push_str(BLUE);
+                l.push_str(p.Title.as_str());
+                l.push_str(RST);
+                
+                titles.push(l.clone());
+                
+                mt = if l.len() > mt { l.len() } else { mt };
+                
+                l.clear();
+                
+                l.push('\t');
+                l.push_str(p.Description.as_str());
+                
+                l.push('\n');
+
+                lines.push(l);
+            }
+
+            for i in 0..len {
+                s.push_str(format!("{:<width$} : \n", titles[i].as_str(), width = mt).as_str());
+                s.push_str(shorten(&lines[i].as_str(), MAX_LINE_LENGTH).as_str());
+                
+                s.push('\t');
+                s.push_str(BLUE);
+
+                s.push_str(" - ");
+                s.push_str(CYAN);
+                s.push_str(v.Projects[i].URL.as_str());
+                s.push_str(RST);
+
+                s.push('\n');
+                s.push('\n');
+            }
+
+            s
+        },
+        Err(_) => {
+            "/projects:\n\nError rendering page!\n".to_string()
+        },
+    };
+}
+
 #[get("/socials")]
 fn socials() -> String {
     let route: &str = "/socials:";
@@ -85,7 +165,7 @@ fn index() -> String {
 
 #[launch]
 fn rocket() -> _ {
-    let routes = routes![index, socials];
+    let routes = routes![index, socials, projects];
     let mut file = File::create("routes.txt").unwrap();
     
     for i in &routes {
