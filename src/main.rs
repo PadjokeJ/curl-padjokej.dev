@@ -5,7 +5,8 @@ use std::str::Split;
 use reqwest::{self, Response};
 use serde::{Deserialize, Serialize};
 
-#[macro_use] extern crate rocket;
+#[macro_use]
+extern crate rocket;
 
 const RST: &str = "\x1B[0m";
 
@@ -21,7 +22,7 @@ const WEBSITE_HEADER: &str = "\
 
 #[derive(Deserialize, Serialize)]
 struct Projects {
-    Projects: Vec<Project>
+    Projects: Vec<Project>,
 }
 
 #[derive(Deserialize, Serialize)]
@@ -70,7 +71,7 @@ fn routes() -> String {
 
     let p = format!("\t{}${} curl https://padjokej.dev{}", CYAN, BLUE, CYAN);
 
-    r.for_each(|a| -> () { 
+    r.for_each(|a| -> () {
         if a.len() > 0 {
             s.push_str(&p);
             s.push_str(a);
@@ -85,13 +86,13 @@ fn routes() -> String {
 #[get("/projects")]
 async fn projects() -> String {
     let res = reqwest::get("https://padjokej.dev/projects.json").await;
-    
+
     return match res {
         Ok(res) => {
             let v: Projects = serde_json::from_str(res.text().await.unwrap().as_str()).unwrap();
-            
+
             let mut s: String = String::from("/projects:\n\n");
-            
+
             let mut lines: Vec<String> = Vec::new();
             let mut titles: Vec<String> = Vec::new();
 
@@ -105,16 +106,16 @@ async fn projects() -> String {
                 l.push_str(BLUE);
                 l.push_str(p.Title.as_str());
                 l.push_str(RST);
-                
+
                 titles.push(l.clone());
-                
+
                 mt = if l.len() > mt { l.len() } else { mt };
-                
+
                 l.clear();
-                
+
                 l.push('\t');
                 l.push_str(p.Description.as_str());
-                
+
                 l.push('\n');
 
                 lines.push(l);
@@ -123,7 +124,7 @@ async fn projects() -> String {
             for i in 0..len {
                 s.push_str(format!("{:<width$} : \n", titles[i].as_str(), width = mt).as_str());
                 s.push_str(shorten(&lines[i].as_str(), MAX_LINE_LENGTH).as_str());
-                
+
                 s.push('\t');
                 s.push_str(BLUE);
 
@@ -137,10 +138,8 @@ async fn projects() -> String {
             }
 
             s
-        },
-        Err(_) => {
-            "/projects:\n\nError rendering page!\n".to_string()
-        },
+        }
+        Err(_) => "/projects:\n\nError rendering page!\n".to_string(),
     };
 }
 
@@ -159,19 +158,29 @@ fn socials() -> String {
 #[get("/")]
 fn index() -> String {
     let route: &str = "/:";
-    let description = shorten("\n\tHello, I'm PadjokeJ, a computer science student from Switzerland.\n", MAX_LINE_LENGTH);
-    format!("{}\n{}\n{}\n{}\n", route, WEBSITE_HEADER, description, routes())
+    let description = shorten(
+        "\n\tHello, I'm PadjokeJ, a computer science student from Switzerland.\n",
+        MAX_LINE_LENGTH,
+    );
+    format!(
+        "{}\n{}\n{}\n{}\n",
+        route,
+        WEBSITE_HEADER,
+        description,
+        routes()
+    )
 }
 
 #[launch]
 fn rocket() -> _ {
     let routes = routes![index, socials, projects];
     let mut file = File::create("routes.txt").unwrap();
-    
+
     for i in &routes {
-        file.write(format!("{}\n", i.uri.path()).as_bytes());
+        file.write(format!("{}\n", i.uri.path()).as_bytes())
+            .unwrap();
     }
 
+    println!("Launching rocket !");
     rocket::build().mount("/", routes)
 }
-

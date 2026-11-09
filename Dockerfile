@@ -1,4 +1,4 @@
-FROM rust:1-alpine3.21 AS build
+FROM rust:1-slim-bookworm AS build
 
 ARG pkg=website
 
@@ -15,7 +15,8 @@ RUN set -eux; \
     cargo build --release; \
     objcopy --compress-debug-sections target/release/$pkg ./main
 
-FROM alpine:3.21
+FROM debian:bookworm-slim AS runtime
+
 
 WORKDIR /app
 RUN chmod 777 /app
