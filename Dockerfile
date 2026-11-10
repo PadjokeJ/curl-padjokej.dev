@@ -1,37 +1,34 @@
-FROM rust:1-slim-bookworm AS build
+FROM docker.io/rust:1-slim-bookworm AS build
 
+## cargo package name: customize here or provide via --build-arg
 ARG pkg=website
 
 WORKDIR /build
 
-COPY Cargo.toml Cargo.lock ./
-RUN mkdir src && echo "fn main() {}" > src/main.rs
-RUN cargo build --release
-RUN rm -rf src
-
 COPY . .
 
-RUN set -eux; \
+RUN --mount=type=cache,target=/build/target \
+    --mount=type=cache,target=/usr/local/cargo/registry \
+    --mount=type=cache,target=/usr/local/cargo/git \
+    set -eux; \
     cargo build --release; \
     objcopy --compress-debug-sections target/release/$pkg ./main
 
-FROM debian:bookworm-slim AS runtime
+################################################################################
 
+FROM docker.io/debian:bookworm-slim
 
 WORKDIR /app
-RUN chmod 777 /app
 
+## copy the main binary
 COPY --from=build /build/main ./
 
-RUN mkdir /app/static/
-
-COPY --from=build /build/Rocket.toml ./static/
-COPY --from=build /build/socials.txt ./
+## copy runtime assets which may or may not exist
+COPY --from=build /build/Rocket.toml ./
+COPY --from=build /build/socials.txt .
 
 ENV ROCKET_ADDRESS=0.0.0.0
 ENV ROCKET_PORT=8002
-
-RUN ls -la
 
 EXPOSE 8002
 
