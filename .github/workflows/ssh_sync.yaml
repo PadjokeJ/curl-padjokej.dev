@@ -1,6 +1,9 @@
-on: 
-  push:
-    branches: master
+on:
+  workflow_run:
+    workflows: ["Build and push Docker image"]
+    types:
+      - completed
+
 name: ssh copy into server
 
 jobs:
@@ -9,7 +12,7 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        
+
       - name: Create SSH keys
         run: |
           install -m 600 -D /dev/null ~/.ssh/id_rsa
@@ -18,8 +21,7 @@ jobs:
           hosts="$(dig +short "$host" | grep -v '\.$' | sed -z 's|\n|,|g')$host"
           ssh-keyscan -H "$hosts" > ~/.ssh/known_hosts
         shell: bash
-        
+
       - name: Copy website into VPS
-        run: ssh -i ~/.ssh/id_rsa "arch@${{ secrets.HOST }}" cd curl-padjokej.dev && git pull
+        run: ssh -i ~/.ssh/id_rsa "arch@${{ secrets.HOST }}" docker compose pull curlsite && docker compose up curlsite
         shell: bash
-        
